@@ -235,7 +235,7 @@ nhgis_create_extract(...)
 
 ## 🚀 Workflow: Jupyter MCP + ipumsr
 
-This server pairs naturally with a [Jupyter MCP server](https://github.com/dsp-shp/jupyter-mcp-server) to form a complete data pipeline — from browsing IPUMS metadata to live analysis in a notebook — without leaving your LLM client.
+This server pairs naturally with a [Jupyter MCP server](https://github.com/datalayer/jupyter-mcp-server) to form a complete data pipeline — from browsing IPUMS metadata to live analysis in a notebook — without leaving your LLM client.
 
 ### Full pipeline example
 
