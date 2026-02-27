@@ -146,6 +146,7 @@ export function registerMicrodataTools(server: McpServer): void {
             "rCommandFile",
             "spssCommandFile",
             "stataCommandFile",
+            "stsCommandFile",   // actual key returned by API for Stata syntax
             "sasCommandFile",
           ])
         )
@@ -280,6 +281,90 @@ export function registerMicrodataTools(server: McpServer): void {
           { type: "text", text: JSON.stringify({ downloaded, errors }, null, 2) },
         ],
       };
+    }
+  );
+
+  // Poll until an extract reaches a terminal status
+  server.tool(
+    "microdata_wait_for_extract",
+    "Poll a microdata extract until it completes (or fails). Returns the final extract object including downloadLinks when done. Use after microdata_create_extract to avoid manual status checks.",
+    {
+      collection: MicrodataCollectionSchema.describe(
+        "IPUMS microdata collection (e.g. 'usa', 'cps')"
+      ),
+      extractNumber: z
+        .number()
+        .int()
+        .positive()
+        .describe("Extract number to wait for"),
+      pollIntervalSeconds: z
+        .number()
+        .int()
+        .min(5)
+        .max(120)
+        .optional()
+        .default(15)
+        .describe("Seconds between status checks (default: 15, min: 5)"),
+      timeoutSeconds: z
+        .number()
+        .int()
+        .min(30)
+        .max(3600)
+        .optional()
+        .default(600)
+        .describe("Maximum seconds to wait before giving up (default: 600)"),
+      version: z.string().optional().default("v2").describe("API version (default: v2)"),
+    },
+    async ({
+      collection,
+      extractNumber,
+      pollIntervalSeconds = 15,
+      timeoutSeconds = 600,
+      version = "v2",
+    }) => {
+      const TERMINAL = new Set(["completed", "failed", "cancelled"]);
+      const deadline = Date.now() + timeoutSeconds * 1000;
+      let attempts = 0;
+
+      while (true) {
+        const extract = (await ipumsRequest(`/extracts/${extractNumber}`, {
+          params: { collection, version },
+        })) as Record<string, unknown>;
+
+        attempts++;
+        const status = extract.status as string | undefined;
+
+        if (status && TERMINAL.has(status)) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(
+                  { attempts, waitedSeconds: attempts * pollIntervalSeconds, extract },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
+        if (Date.now() + pollIntervalSeconds * 1000 > deadline) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  error: `Timed out after ${timeoutSeconds}s (${attempts} checks). Last status: ${status ?? "unknown"}`,
+                  extract,
+                }),
+              },
+            ],
+          };
+        }
+
+        await new Promise((r) => setTimeout(r, pollIntervalSeconds * 1000));
+      }
     }
   );
 }

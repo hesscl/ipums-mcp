@@ -49,6 +49,7 @@ Restart Claude Desktop after editing.
 | `microdata_list_extracts` | List recent extracts for a collection |
 | `microdata_get_extract` | Get status and download links for an extract |
 | `microdata_create_extract` | Submit a new extract request |
+| `microdata_wait_for_extract` | Poll until extract completes (or fails/times out) |
 | `microdata_download_extract` | Download completed extract files to disk, with SHA-256 verification |
 
 **Create extract — samples and variables use array syntax:**
@@ -82,7 +83,9 @@ The server converts these to the keyed-object format the IPUMS API v2 requires.
 }
 ```
 
-Available `fileTypes`: `data`, `ddiCodebook`, `basicCodebook`, `rCommandFile`, `spssCommandFile`, `stataCommandFile`, `sasCommandFile`.
+Available `fileTypes`: `data`, `ddiCodebook`, `basicCodebook`, `rCommandFile`, `spssCommandFile`, `stataCommandFile`, `stsCommandFile`, `sasCommandFile`.
+
+> **Note:** The IPUMS API returns `stsCommandFile` (not `stataCommandFile`) for Stata syntax files in some collections. Include both if unsure.
 
 Returns `{ downloaded: [...], errors: [...] }`. Each entry includes `localPath`, `bytes`, and `sha256Verified`.
 
@@ -119,9 +122,9 @@ This server pairs naturally with a [Jupyter MCP server](https://github.com/dsp-s
 Or for microdata:
 
 ```
-1. microdata_create_extract     → submit
-2. microdata_get_extract        → poll for "completed"
-3. microdata_download_extract   → download data + DDI codebook
+1. microdata_create_extract       → submit
+2. microdata_wait_for_extract     → blocks until "completed" (no manual polling)
+3. microdata_download_extract     → download data + DDI codebook
 ```
 
 **Step 2 — Analyze in Jupyter with ipumsr (R kernel) 📓**
