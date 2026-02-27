@@ -12,6 +12,7 @@ import {
   PaginationSchema,
   PathParamSchema,
 } from "../types.js";
+import { searchVariables, USA_VARIABLES } from "../data/usa-variables.js";
 
 export function registerMicrodataTools(server: McpServer): void {
   // List recent extracts for a microdata collection
@@ -138,8 +139,29 @@ export function registerMicrodataTools(server: McpServer): void {
         params: { collection, version },
         body: extractBody,
       });
+
+      const nSamples = samples?.length ?? 0;
+      const nVars = variables?.length ?? 0;
+      const complexity = nSamples * nVars;
+      // Rough thresholds based on IPUMS typical processing times
+      let sizeAdvisory: string;
+      if (complexity === 0) {
+        sizeAdvisory = "Extract size unknown (no samples/variables counted).";
+      } else if (complexity <= 200) {
+        sizeAdvisory = `Small extract (${nSamples} sample(s) × ${nVars} variable(s)). Usually ready within 1–3 minutes — microdata_wait_for_extract should be fine.`;
+      } else if (complexity <= 2000) {
+        sizeAdvisory = `Medium extract (${nSamples} sample(s) × ${nVars} variable(s)). Typically takes 3–15 minutes. Consider asking the user whether to wait now or check back later with microdata_get_extract.`;
+      } else {
+        sizeAdvisory = `Large extract (${nSamples} sample(s) × ${nVars} variable(s), complexity score ${complexity}). May take 20–60+ minutes. Recommend telling the user the extract number and asking them to check back later using microdata_get_extract rather than blocking with microdata_wait_for_extract.`;
+      }
+
       return {
-        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(result, null, 2) + `\n\n// SIZE ADVISORY: ${sizeAdvisory}`,
+          },
+        ],
       };
     }
   );
@@ -310,7 +332,7 @@ export function registerMicrodataTools(server: McpServer): void {
   // Poll until an extract reaches a terminal status
   server.tool(
     "microdata_wait_for_extract",
-    "Poll a microdata extract until it completes (or fails). Returns the final extract object including downloadLinks when done. Use after microdata_create_extract to avoid manual status checks.",
+    "Poll a microdata extract until it completes (or fails). Returns the final extract object including downloadLinks when done. Default timeout is 90 seconds — if the extract is still running at that point the tool returns early with the current status and a command to check back later, so the conversation is not blocked for large extracts.",
     {
       collection: MicrodataCollectionSchema.describe(
         "IPUMS microdata collection (e.g. 'usa', 'cps')"
@@ -334,15 +356,15 @@ export function registerMicrodataTools(server: McpServer): void {
         .min(30)
         .max(3600)
         .optional()
-        .default(600)
-        .describe("Maximum seconds to wait before giving up (default: 600)"),
+        .default(90)
+        .describe("Maximum seconds to wait before returning early (default: 90). Increase only if the user explicitly agrees to wait longer."),
       version: z.string().optional().default("v2").describe("API version (default: v2)"),
     },
     async ({
       collection,
       extractNumber,
       pollIntervalSeconds = 15,
-      timeoutSeconds = 600,
+      timeoutSeconds = 90,
       version = "v2",
     }) => {
       const TERMINAL = new Set(["completed", "failed", "cancelled"]);
@@ -378,7 +400,8 @@ export function registerMicrodataTools(server: McpServer): void {
               {
                 type: "text",
                 text: JSON.stringify({
-                  error: `Timed out after ${timeoutSeconds}s (${attempts} checks). Last status: ${status ?? "unknown"}`,
+                  status: "still_processing",
+                  message: `Extract ${extractNumber} is still ${status ?? "processing"} after ${timeoutSeconds}s (${attempts} check(s)). This is normal for large extracts. Ask the user if they would like to wait longer, or tell them to check back later using: microdata_get_extract({ collection: "${collection}", extractNumber: ${extractNumber} })`,
                   extract,
                 }),
               },
@@ -388,6 +411,59 @@ export function registerMicrodataTools(server: McpServer): void {
 
         await new Promise((r) => setTimeout(r, pollIntervalSeconds * 1000));
       }
+    }
+  );
+
+  // Search/browse IPUMS USA variable mnemonics
+  server.tool(
+    "microdata_search_variables",
+    "Search IPUMS USA harmonized variable mnemonics by name or label. Returns matching variables with their label, record type (H=household / P=person), thematic group, and available sample IDs. Use this to discover variable names before building an extract. The `samples` field lists representative IPUMS USA sample IDs (e.g. 'us2024a') where the variable is available — cross-reference with microdata_list_samples. Database covers 827 harmonized variables scraped from usa.ipums.org.",
+    {
+      query: z
+        .string()
+        .optional()
+        .default("")
+        .describe("Search term matched against variable name and label (case-insensitive). Leave empty to list all variables."),
+      type: z
+        .enum(["H", "P"])
+        .optional()
+        .describe("Filter by record type: H = household-level, P = person-level"),
+      group: z
+        .string()
+        .optional()
+        .describe("Filter by thematic group (e.g. 'Income', 'Education', 'Geographic'). Partial match, case-insensitive."),
+      sample: z
+        .string()
+        .optional()
+        .describe("Filter to variables available in a specific sample ID (e.g. 'us2024a', 'us1990a'). Must be an exact sample ID match."),
+      limit: z
+        .number()
+        .int()
+        .min(1)
+        .max(500)
+        .optional()
+        .default(50)
+        .describe("Maximum number of results to return (default: 50, max: 500)"),
+    },
+    async ({ query = "", type, group, sample, limit = 50 }) => {
+      const results = searchVariables(query, { type, group, sample }).slice(0, limit);
+      const total = searchVariables(query, { type, group, sample }).length;
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify(
+              {
+                total,
+                returned: results.length,
+                variables: results,
+              },
+              null,
+              2
+            ),
+          },
+        ],
+      };
     }
   );
 }

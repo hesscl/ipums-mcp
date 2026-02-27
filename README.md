@@ -46,14 +46,38 @@ Restart Claude Desktop after editing.
 
 | Tool | Description |
 |------|-------------|
+| `microdata_search_variables` | Search the offline variable database by name, label, group, or sample (no API key needed) |
 | `microdata_list_samples` | List available samples for a collection (use to find sample IDs by year/survey) |
 | `microdata_list_extracts` | List recent extracts for a collection |
 | `microdata_get_extract` | Get status and download links for an extract |
 | `microdata_create_extract` | Submit a new extract request |
-| `microdata_wait_for_extract` | Poll until extract completes (or fails/times out) |
+| `microdata_wait_for_extract` | Poll until extract completes, with automatic bail-out for large extracts |
 | `microdata_download_extract` | Download completed extract files to disk, with SHA-256 verification |
 
-**Create extract — samples and variables use array syntax:**
+#### Variable search
+
+`microdata_search_variables` queries a local database of **827 harmonized IPUMS USA variables** scraped from [usa.ipums.org](https://usa.ipums.org/usa-action/variables/group) — no API key or network request needed.
+
+Each result includes:
+- `name` — variable mnemonic (e.g. `INCTOT`)
+- `label` — short description (e.g. `"Total personal income"`)
+- `type` — `"H"` (household-level) or `"P"` (person-level)
+- `groups` — thematic category (e.g. `"Person: Income"`)
+- `samples` — representative IPUMS USA sample IDs where the variable is available (e.g. `["us2024a", "us2023a", ..., "us1850a"]`)
+
+Filter by any combination of `query`, `type`, `group`, and `sample`:
+
+```
+microdata_search_variables({ query: "income", type: "P", sample: "us2024a" })
+microdata_search_variables({ group: "Education" })
+microdata_search_variables({ query: "veteran", sample: "us1990a" })
+```
+
+> The `samples` field lists the representative display columns from usa.ipums.org — a subset of all available samples. Cross-reference with `microdata_list_samples` for the complete list.
+
+#### Create extract
+
+Samples and variables use array syntax:
 
 ```json
 {
@@ -73,7 +97,29 @@ Restart Claude Desktop after editing.
 
 The server converts these to the keyed-object format the IPUMS API v2 requires.
 
-**Download a completed extract:**
+The response includes a **size advisory** based on `samples × variables` to help decide whether to poll immediately or check back later:
+
+| Complexity | Advisory |
+|---|---|
+| ≤ 200 | Small — `microdata_wait_for_extract` is fine (1–3 min) |
+| ≤ 2,000 | Medium — consider asking the user (3–15 min) |
+| > 2,000 | Large — recommend checking back with `microdata_get_extract` (20–60+ min) |
+
+#### Wait for extract
+
+`microdata_wait_for_extract` defaults to a **90-second timeout**. If the extract is still processing when the timeout is reached, the tool returns early with:
+
+```json
+{
+  "status": "still_processing",
+  "message": "Extract 42 is still queued after 90s (6 check(s)). Ask the user if they would like to wait longer, or tell them to check back later using: microdata_get_extract({ collection: \"usa\", extractNumber: 42 })",
+  "extract": { ... }
+}
+```
+
+This keeps the conversation responsive — the user gets the extract number and can ask to resume polling or check back manually at their convenience. Pass a higher `timeoutSeconds` only if the user explicitly agrees to wait.
+
+#### Download a completed extract
 
 ```json
 {
@@ -123,18 +169,14 @@ This server pairs naturally with a [Jupyter MCP server](https://github.com/dsp-s
 Or for microdata:
 
 ```
-1. microdata_list_samples         → find the right sample ID ("2022 ACS" → us2022a)
-2. microdata_create_extract       → submit (variables resolved from natural language)
-3. microdata_wait_for_extract     → blocks until "completed" (no manual polling)
-4. microdata_download_extract     → download data + DDI codebook
+1. microdata_search_variables     → find variable names by keyword or group
+2. microdata_list_samples         → confirm the right sample ID ("2022 ACS" → us2022a)
+3. microdata_create_extract       → submit (size advisory tells you whether to wait or check back)
+4. microdata_wait_for_extract     → poll up to 90s; bail out gracefully for large extracts
+5. microdata_download_extract     → download data + DDI codebook
 ```
 
-> 💡 **Natural language tip:** Claude knows IPUMS variable names from training data.
-> You can say *"income, race, veteran status, state"* and it will resolve those to
-> `INCTOT`, `RACE`, `VETSTAT`, `STATEFIP`. Use `microdata_list_samples` to
-> confirm the exact sample ID for a given year/survey. A NHGIS variable API does
-> not exist, but `nhgis_get_dataset` and `nhgis_get_data_table` provide full
-> variable listings for NHGIS extracts.
+> 💡 **Variable discovery:** Use `microdata_search_variables` to look up mnemonics from natural language — search `"income"`, `"veteran"`, `"race"` — rather than relying on memorized variable names. Filter by `sample` to confirm a variable is available in your target year. A NHGIS variable API does not exist, but `nhgis_get_dataset` and `nhgis_get_data_table` provide full variable listings for NHGIS extracts.
 
 **Step 2 — Analyze in Jupyter with ipumsr (R kernel) 📓**
 
@@ -213,8 +255,10 @@ src/
   index.ts          entry point
   client.ts         shared HTTP client (ipumsRequest, getApiKey)
   types.ts          Zod schemas
+  data/
+    usa-variables.ts  offline DB — 827 harmonized IPUMS USA variables
   tools/
-    microdata.ts    microdata tools (list, get, create, download)
+    microdata.ts    microdata tools (search vars, list, get, create, wait, download)
     nhgis.ts        NHGIS tools
 ```
 
