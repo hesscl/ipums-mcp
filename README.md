@@ -8,8 +8,11 @@ A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that ex
 
 - Node.js 18+
 - An [IPUMS API key](https://account.ipums.org/api_keys)
+- Any MCP-compatible client (Claude Desktop, Claude Code, Cursor, Windsurf, etc.)
 
-## 🛠️ Setup
+## 🛠️ Installation
+
+**1. Clone and build**
 
 ```bash
 git clone https://github.com/hesscl/ipums-mcp
@@ -18,11 +21,19 @@ npm install
 npm run build
 ```
 
-> ⚠️ **Never commit your API key.** Store it only in environment variables or your MCP client config (see below).
+**2. Configure your MCP client**
 
-## 🖥️ Claude Desktop Configuration
+All MCP clients use the same server entry point — only the config file location differs. Set `IPUMS_API_KEY` as an environment variable; never hard-code it.
 
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
+The server command is always:
+
+```
+node /absolute/path/to/ipums-mcp/dist/index.js
+```
+
+### Claude Desktop
+
+Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
 ```json
 {
@@ -30,15 +41,57 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
     "ipums": {
       "command": "node",
       "args": ["/absolute/path/to/ipums-mcp/dist/index.js"],
-      "env": {
-        "IPUMS_API_KEY": "your-key-here"
-      }
+      "env": { "IPUMS_API_KEY": "your-key-here" }
     }
   }
 }
 ```
 
-Restart Claude Desktop after editing.
+Restart Claude Desktop after saving.
+
+### Claude Code (CLI)
+
+```bash
+claude mcp add ipums node /absolute/path/to/ipums-mcp/dist/index.js \
+  -e IPUMS_API_KEY=your-key-here
+```
+
+Or add manually to `.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "ipums": {
+      "command": "node",
+      "args": ["/absolute/path/to/ipums-mcp/dist/index.js"],
+      "env": { "IPUMS_API_KEY": "your-key-here" }
+    }
+  }
+}
+```
+
+### Cursor / Windsurf
+
+Add to your editor's MCP settings (typically under Settings → MCP or a `mcp.json` file):
+
+```json
+{
+  "mcpServers": {
+    "ipums": {
+      "command": "node",
+      "args": ["/absolute/path/to/ipums-mcp/dist/index.js"],
+      "env": { "IPUMS_API_KEY": "your-key-here" }
+    }
+  }
+}
+```
+
+### Other MCP clients
+
+Any client that supports the [MCP stdio transport](https://modelcontextprotocol.io/docs/concepts/transports) works. Provide:
+- **Command:** `node`
+- **Args:** `["/absolute/path/to/ipums-mcp/dist/index.js"]`
+- **Env:** `IPUMS_API_KEY=your-key-here`
 
 ## 🔧 Tools
 
@@ -243,14 +296,16 @@ library(ipumsr)
 tbl <- read_nhgis("/data/ipums/nhgis0007_csv.zip", data_layer = 1)
 ```
 
-### Suggested Claude Desktop + Jupyter MCP config
+### Suggested config with Jupyter MCP
+
+Add both servers to your MCP client config:
 
 ```json
 {
   "mcpServers": {
     "ipums": {
       "command": "node",
-      "args": ["/path/to/ipums-mcp/dist/index.js"],
+      "args": ["/absolute/path/to/ipums-mcp/dist/index.js"],
       "env": { "IPUMS_API_KEY": "your-key-here" }
     },
     "jupyter": {
@@ -262,7 +317,7 @@ tbl <- read_nhgis("/data/ipums/nhgis0007_csv.zip", data_layer = 1)
 }
 ```
 
-With both servers running you can tell Claude: *"Submit a 2022 ACS extract for VETSTAT, AGE, SEX, STATEFIP, download it when ready, then open a Jupyter notebook and plot veteran counts by state with ggplot2."* 🎯
+With both servers running you can prompt your LLM client: *"Submit a 2022 ACS extract for VETSTAT, AGE, SEX, STATEFIP, download it when ready, then open a Jupyter notebook and plot veteran counts by state with ggplot2."* 🎯
 
 ## 🔒 Security Notes
 
