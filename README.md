@@ -46,6 +46,7 @@ Restart Claude Desktop after editing.
 
 | Tool | Description |
 |------|-------------|
+| `microdata_list_samples` | List available samples for a collection (use to find sample IDs by year/survey) |
 | `microdata_list_extracts` | List recent extracts for a collection |
 | `microdata_get_extract` | Get status and download links for an extract |
 | `microdata_create_extract` | Submit a new extract request |
@@ -122,10 +123,18 @@ This server pairs naturally with a [Jupyter MCP server](https://github.com/dsp-s
 Or for microdata:
 
 ```
-1. microdata_create_extract       → submit
-2. microdata_wait_for_extract     → blocks until "completed" (no manual polling)
-3. microdata_download_extract     → download data + DDI codebook
+1. microdata_list_samples         → find the right sample ID ("2022 ACS" → us2022a)
+2. microdata_create_extract       → submit (variables resolved from natural language)
+3. microdata_wait_for_extract     → blocks until "completed" (no manual polling)
+4. microdata_download_extract     → download data + DDI codebook
 ```
+
+> 💡 **Natural language tip:** Claude knows IPUMS variable names from training data.
+> You can say *"income, race, veteran status, state"* and it will resolve those to
+> `INCTOT`, `RACE`, `VETSTAT`, `STATEFIP`. Use `microdata_list_samples` to
+> confirm the exact sample ID for a given year/survey. A NHGIS variable API does
+> not exist, but `nhgis_get_dataset` and `nhgis_get_data_table` provide full
+> variable listings for NHGIS extracts.
 
 **Step 2 — Analyze in Jupyter with ipumsr (R kernel) 📓**
 

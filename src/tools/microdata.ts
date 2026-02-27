@@ -40,6 +40,29 @@ export function registerMicrodataTools(server: McpServer): void {
     }
   );
 
+  // List available samples for a microdata collection
+  server.tool(
+    "microdata_list_samples",
+    "List available samples for an IPUMS microdata collection (e.g. all ACS, CPS, or Census years). Use this to find the correct sample ID before creating an extract.",
+    {
+      collection: MicrodataCollectionSchema.describe(
+        "IPUMS microdata collection (e.g. 'usa', 'cps', 'ipumsi')"
+      ),
+      version: z.string().optional().default("v2").describe("API version (default: v2)"),
+      ...PaginationSchema.shape,
+    },
+    async ({ collection, version = "v2", pageNumber, pageSize }) => {
+      const params: Record<string, string | number> = { version };
+      if (pageNumber !== undefined) params.pageNumber = pageNumber;
+      if (pageSize !== undefined) params.pageSize = pageSize;
+
+      const result = await ipumsRequest(`/metadata/${collection}/samples`, { params });
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    }
+  );
+
   // Get a specific microdata extract by number
   server.tool(
     "microdata_get_extract",
