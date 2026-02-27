@@ -19,6 +19,41 @@ function buildPaginationParams(
   return params;
 }
 
+/** Fetch all pages from a paginated NHGIS metadata endpoint. */
+async function fetchAllPages(
+  path: string,
+  extraParams: Record<string, string | number> = {},
+  maxPages = 20
+): Promise<unknown[]> {
+  const results: unknown[] = [];
+  let pageNumber = 1;
+
+  while (pageNumber <= maxPages) {
+    const params = { version: NHGIS_VERSION, pageSize: 500, pageNumber, ...extraParams };
+    const page = (await ipumsRequest(path, { params })) as {
+      data?: unknown[];
+      links?: { nextPage?: string };
+    };
+
+    const items = page?.data ?? [];
+    results.push(...items);
+
+    if (!page?.links?.nextPage || items.length === 0) break;
+    pageNumber++;
+  }
+
+  return results;
+}
+
+/** Case-insensitive keyword match across multiple string fields of an object. */
+function matchesKeyword(item: Record<string, unknown>, keyword: string, fields: string[]): boolean {
+  const kw = keyword.toLowerCase();
+  return fields.some((f) => {
+    const val = item[f];
+    return typeof val === "string" && val.toLowerCase().includes(kw);
+  });
+}
+
 export function registerNhgisTools(server: McpServer): void {
   // List available NHGIS datasets
   server.tool(
@@ -224,6 +259,103 @@ export function registerNhgisTools(server: McpServer): void {
       });
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    }
+  );
+
+  // Search NHGIS datasets by keyword
+  server.tool(
+    "nhgis_search_datasets",
+    "Search NHGIS datasets by keyword. Fetches all available datasets and returns those whose name, group (e.g. '2020 Census'), or description match the keyword. Use this to find which datasets cover a topic or census year before drilling into specific data tables.",
+    {
+      keyword: z.string().describe("Search term to match against dataset name, group, and description (case-insensitive)"),
+    },
+    async ({ keyword }) => {
+      const all = await fetchAllPages("/metadata/nhgis/datasets") as Record<string, unknown>[];
+      const matches = all.filter((d) =>
+        matchesKeyword(d, keyword, ["name", "group", "description"])
+      );
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              matches.length === 0
+                ? `No datasets found matching "${keyword}".`
+                : `Found ${matches.length} dataset(s) matching "${keyword}":\n\n${JSON.stringify(matches, null, 2)}`,
+          },
+        ],
+      };
+    }
+  );
+
+  // Search NHGIS data tables by keyword, optionally scoped to a dataset
+  server.tool(
+    "nhgis_search_data_tables",
+    "Search NHGIS data tables by keyword. If a dataset is specified, searches all tables within that dataset (comprehensive). Without a dataset, scans up to 2,500 tables across all datasets — recommend using nhgis_search_datasets first to find a relevant dataset, then scoping the search here. Matches against table description and universe.",
+    {
+      keyword: z.string().describe("Search term to match against table description and universe (case-insensitive)"),
+      dataset: PathParamSchema
+        .optional()
+        .describe("Optional dataset identifier to scope the search (e.g. '2019_ACS5a'). Strongly recommended for comprehensive results."),
+    },
+    async ({ keyword, dataset }) => {
+      let all: Record<string, unknown>[];
+      let note = "";
+
+      if (dataset) {
+        all = (await fetchAllPages(
+          `/metadata/nhgis/datasets/${dataset}/data_tables`
+        )) as Record<string, unknown>[];
+      } else {
+        // Scan first 5 pages (up to 2,500 tables) across the full corpus
+        all = (await fetchAllPages("/metadata/nhgis/data_tables", {}, 5)) as Record<string, unknown>[];
+        note =
+          `\n\n⚠️ Searched the first ${all.length} tables across all datasets. ` +
+          `For comprehensive results, use nhgis_search_datasets("${keyword}") to find a relevant dataset, ` +
+          `then call nhgis_search_data_tables again with the dataset parameter.`;
+      }
+
+      const matches = all.filter((t) =>
+        matchesKeyword(t, keyword, ["description", "universe", "nhgisCode"])
+      );
+
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              matches.length === 0
+                ? `No data tables found matching "${keyword}"${dataset ? ` in dataset "${dataset}"` : ""}.${note}`
+                : `Found ${matches.length} data table(s) matching "${keyword}"${dataset ? ` in dataset "${dataset}"` : ""}:\n\n${JSON.stringify(matches, null, 2)}${note}`,
+          },
+        ],
+      };
+    }
+  );
+
+  // Search NHGIS time series tables by keyword
+  server.tool(
+    "nhgis_search_time_series_tables",
+    "Search NHGIS time series tables by keyword. Fetches all ~400 time series tables (which span multiple census years with consistent geographic definitions) and returns those matching the keyword in their name or description.",
+    {
+      keyword: z.string().describe("Search term to match against time series table name and description (case-insensitive)"),
+    },
+    async ({ keyword }) => {
+      const all = (await fetchAllPages("/metadata/nhgis/time_series_tables")) as Record<string, unknown>[];
+      const matches = all.filter((t) =>
+        matchesKeyword(t, keyword, ["name", "description", "sequence"])
+      );
+      return {
+        content: [
+          {
+            type: "text",
+            text:
+              matches.length === 0
+                ? `No time series tables found matching "${keyword}".`
+                : `Found ${matches.length} time series table(s) matching "${keyword}":\n\n${JSON.stringify(matches, null, 2)}`,
+          },
+        ],
       };
     }
   );

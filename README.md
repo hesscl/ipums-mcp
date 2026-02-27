@@ -140,16 +140,45 @@ Returns `{ downloaded: [...], errors: [...] }`. Each entry includes `localPath`,
 
 | Tool | Description |
 |------|-------------|
-| `nhgis_list_datasets` | Browse available datasets |
+| `nhgis_search_datasets` | Search all datasets by keyword (name, census group, description) |
+| `nhgis_search_data_tables` | Search data tables by keyword, optionally scoped to a dataset |
+| `nhgis_search_time_series_tables` | Search all time series tables by keyword |
+| `nhgis_list_datasets` | Browse available datasets (paginated) |
 | `nhgis_get_dataset` | Get tables and geographic levels for a dataset |
-| `nhgis_list_data_tables` | List all data tables |
+| `nhgis_list_data_tables` | List all data tables (paginated) |
 | `nhgis_get_data_table` | Get variables in a data table |
-| `nhgis_list_time_series_tables` | List time series tables |
+| `nhgis_list_time_series_tables` | List time series tables (paginated) |
 | `nhgis_get_time_series_table` | Get detail for a time series table |
 | `nhgis_list_shapefiles` | List available shapefiles |
 | `nhgis_list_extracts` | List recent NHGIS extracts |
 | `nhgis_get_extract` | Get NHGIS extract status and download links |
 | `nhgis_create_extract` | Submit a new NHGIS extract |
+
+#### Table search
+
+Three tools enable natural-language discovery of NHGIS data, complementing the `nhgis_list_*` and `nhgis_get_*` tools:
+
+**`nhgis_search_datasets`** — fetches all ~253 datasets in one call and returns those matching the keyword in their `name`, `group` (e.g. `"2020 Census"`, `"2019 ACS"`), or `description`. Best first step when you know a topic or census year.
+
+**`nhgis_search_time_series_tables`** — fetches all ~400 time series tables (which span multiple census years with consistent geographic definitions) and filters by keyword in `name` or `description`. Ideal for longitudinal analysis.
+
+**`nhgis_search_data_tables`** — searches source data tables by keyword against `description` and `universe`:
+- With `dataset` parameter: fetches **all** tables for that dataset comprehensively.
+- Without `dataset`: scans the first 2,500 tables across all datasets (limited coverage — see note in response).
+
+Recommended workflow:
+
+```
+nhgis_search_datasets("poverty")
+  → pick a dataset (e.g. "2019_ACS5a")
+nhgis_get_dataset("2019_ACS5a")
+  → confirm available tables and geographic levels
+nhgis_search_data_tables("poverty", dataset="2019_ACS5a")
+  → pick a table (e.g. "B17001")
+nhgis_create_extract(...)
+```
+
+> The NHGIS public API does not support server-side filtering. The search tools fetch full metadata pages and filter client-side.
 
 ## 🚀 Workflow: Jupyter MCP + ipumsr
 
@@ -160,10 +189,11 @@ This server pairs naturally with a [Jupyter MCP server](https://github.com/dsp-s
 **Step 1 — Browse and submit (via MCP tools in Claude) 🤖**
 
 ```
-1. nhgis_list_datasets          → find the dataset you want
-2. nhgis_get_dataset            → confirm tables and geo levels
-3. nhgis_create_extract         → submit the extract
-4. nhgis_get_extract            → poll until status = "completed"
+1. nhgis_search_datasets        → find datasets by keyword (topic, year, census program)
+2. nhgis_search_data_tables     → narrow to specific tables (scope to dataset for full coverage)
+3. nhgis_get_dataset            → confirm tables and geo levels
+4. nhgis_create_extract         → submit the extract
+5. nhgis_get_extract            → poll until status = "completed"
 ```
 
 Or for microdata:
@@ -176,7 +206,7 @@ Or for microdata:
 5. microdata_download_extract     → download data + DDI codebook
 ```
 
-> 💡 **Variable discovery:** Use `microdata_search_variables` to look up mnemonics from natural language — search `"income"`, `"veteran"`, `"race"` — rather than relying on memorized variable names. Filter by `sample` to confirm a variable is available in your target year. A NHGIS variable API does not exist, but `nhgis_get_dataset` and `nhgis_get_data_table` provide full variable listings for NHGIS extracts.
+> 💡 **Variable discovery:** Use `microdata_search_variables` to look up mnemonics from natural language — search `"income"`, `"veteran"`, `"race"` — rather than relying on memorized variable names. Filter by `sample` to confirm a variable is available in your target year. For NHGIS, use `nhgis_search_datasets` and `nhgis_search_data_tables` to find tables by keyword, then `nhgis_get_data_table` to see all variables within a table.
 
 **Step 2 — Analyze in Jupyter with ipumsr (R kernel) 📓**
 
@@ -259,7 +289,7 @@ src/
     usa-variables.ts  offline DB — 827 harmonized IPUMS USA variables
   tools/
     microdata.ts    microdata tools (search vars, list, get, create, wait, download)
-    nhgis.ts        NHGIS tools
+    nhgis.ts        NHGIS tools (search datasets/tables/TSTs + list/get/create/extract)
 ```
 
 ## 📄 License
