@@ -1,0 +1,1200 @@
+openapi: "3.0.0"
+info:
+  version: "v2"
+  title: API for IPUMS NHGIS
+servers:
+  - url: https://api.ipums.org
+security:
+  - APIKeyHeader: []
+paths:
+  /metadata/data_tables:
+    get:
+      summary: List all data_tables
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+          required: false
+          description: The page number.
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+          description: The number of records to return per page.
+      responses:
+        '200':
+          description: An array of data_tables
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataTableFull"
+  /metadata/datasets:
+    get:
+      summary: List all datasets
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+          required: false
+          description: The page number.
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+          description: The number of records to return per page.
+      responses:
+        '200':
+          description: An array of datasets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Datasets"
+              example: [
+                {
+                "name": "1790_cPop",
+                "description": "1790 Census: Population Data [US, States & Counties"
+              }]
+  /metadata/datasets/{dataset}:
+    get:
+      summary: Detailed dataset view
+      parameters:
+        - in: path
+          name: dataset
+          schema:
+            type: string
+          required: true
+          description: The name of the dataset.
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+      responses:
+        '200':
+          description: A dataset
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetFull"
+  /metadata/datasets/{dataset}/data_tables/{dataTable}:
+    get:
+      summary: Detailed data table view
+      parameters:
+        - in: path
+          name: dataset
+          schema:
+            type: string
+          required: true
+          description: The name of the dataset.
+        - in: path
+          name: dataTable
+          schema:
+            type: string
+          required: true
+          description: The name of the data table.
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+      responses:
+        '200':
+          description: A data table
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataTableFull"
+  /metadata/time_series_tables:
+    get:
+      summary: List all time series tables
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+          required: false
+          description: The page number.
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+          description: The number of records to return per page.
+      responses:
+        '200':
+          description: An array of time series tables
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimeSeriesTableSimple"
+  /metadata/time_series_tables/{timeSeriesTable}:
+    get:
+      summary: Detailed time series table view
+      parameters:
+        - in: path
+          name: timeSeriesTable
+          schema:
+            type: string
+          required: true
+          description: The name of the time series table.
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+      responses:
+        '200':
+          description: A time series table
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimeSeriesTableFull"
+  /metadata/shapefiles:
+    get:
+      summary: List all the shapefiles.
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+          required: false
+          description: The page number.
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+          description: The number of records to return per page.
+      responses:
+        '200':
+          description: An array of shapefiles.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Shapefile"
+              example: [{
+                "name": "base.tl2000.nongen.us_state_1790",
+                "year": "1790",
+                "geographicLevel": "state",
+                "extent": "united states",
+                "basis": "2000 tiger/line +",
+                "sequence": 1
+                }
+              ]
+  /extracts/{extractNumber}:
+    get:
+      summary: Get a specific data extract.
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+        - in: query
+          name: extractNumber
+          schema:
+            type: integer
+          required: true
+          description: Number of extract to get.
+      responses:
+        '200':
+          description: A data extract.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExtract"
+  /extracts:
+    get:
+      summary: Get a list of recent data extracts.
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+          required: false
+          description: The page number.
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+          description: The number of records to return per page.
+      responses:
+        '200':
+          description: An array of data extracts.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExtracts"
+    post:
+      summary: Create a data extract
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataExtractPost"
+      responses:
+        '200':
+          description: Created data extract
+          content:
+            application/json:
+
+              schema:
+                $ref: "#/components/schemas/DataExtractPostResponse"
+components:
+  schemas:
+    TimeSeriesTableFull:
+      example: {
+        "name": "A00",
+        "description": "Total Population",
+        "geographicIntegration": "Nominal",
+        "sequence": 0.01,
+        "timeSeries": [
+            {
+                "name": "AA",
+                "description": "Persons: Total",
+                "sequence": 1
+            }
+        ],
+        "geogLevels": [
+          {
+            "name": "state",
+            "description": "State",
+            "hasGeogExtentSelection": true,
+            "sequence": 4
+          },
+          {
+            "name": "county",
+            "description": "State--County",
+            "hasGeogExtentSelection": true,
+            "sequence": 25
+          }
+        ],
+        "geographicInstances": [
+          {
+            "name": "010",
+            "description": "Alabama"
+          },
+          {
+            "name": "020",
+            "description": "Alaska"
+          },
+          {
+            "name": "025",
+            "description": "Alaska Territory"
+          },
+          {
+            "name": "040",
+            "description": "Arizona"
+          },
+          {
+            "name": "045",
+            "description": "Arizona Territory"
+          },
+          {
+            "name": "050",
+            "description": "Arkansas"
+          },
+          {
+            "name": "055",
+            "description": "Arkansas Territory"
+          },
+          {
+            "name": "060",
+            "description": "California"
+          },
+          {
+            "name": "080",
+            "description": "Colorado"
+          },
+          {
+            "name": "085",
+            "description": "Colorado Territory"
+          },
+          {
+            "name": "090",
+            "description": "Connecticut"
+          },
+          {
+            "name": "095",
+            "description": "Dakota Territory"
+          },
+          {
+            "name": "100",
+            "description": "Delaware"
+          },
+          {
+            "name": "110",
+            "description": "District of Columbia"
+          },
+          {
+            "name": "120",
+            "description": "Florida"
+          },
+          {
+            "name": "125",
+            "description": "Florida Territory"
+          },
+          {
+            "name": "130",
+            "description": "Georgia"
+          },
+          {
+            "name": "150",
+            "description": "Hawaii"
+          },
+          {
+            "name": "155",
+            "description": "Hawaii Territory"
+          },
+          {
+            "name": "160",
+            "description": "Idaho"
+          },
+          {
+            "name": "165",
+            "description": "Idaho Territory"
+          },
+          {
+            "name": "170",
+            "description": "Illinois"
+          },
+          {
+            "name": "175",
+            "description": "Illinois Territory"
+          },
+          {
+            "name": "178",
+            "description": "Indian Territory"
+          },
+          {
+            "name": "180",
+            "description": "Indiana"
+          },
+          {
+            "name": "185",
+            "description": "Indiana Territory"
+          },
+          {
+            "name": "190",
+            "description": "Iowa"
+          },
+          {
+            "name": "195",
+            "description": "Iowa Territory"
+          },
+          {
+            "name": "200",
+            "description": "Kansas"
+          },
+          {
+            "name": "205",
+            "description": "Kansas Territory"
+          },
+          {
+            "name": "210",
+            "description": "Kentucky"
+          },
+          {
+            "name": "220",
+            "description": "Louisiana"
+          },
+          {
+            "name": "225",
+            "description": "Louisiana Territory"
+          },
+          {
+            "name": "230",
+            "description": "Maine"
+          },
+          {
+            "name": "240",
+            "description": "Maryland"
+          },
+          {
+            "name": "250",
+            "description": "Massachusetts"
+          },
+          {
+            "name": "260",
+            "description": "Michigan"
+          },
+          {
+            "name": "265",
+            "description": "Michigan Territory"
+          },
+          {
+            "name": "270",
+            "description": "Minnesota"
+          },
+          {
+            "name": "275",
+            "description": "Minnesota Territory"
+          },
+          {
+            "name": "280",
+            "description": "Mississippi"
+          },
+          {
+            "name": "285",
+            "description": "Mississippi Territory"
+          },
+          {
+            "name": "290",
+            "description": "Missouri"
+          },
+          {
+            "name": "295",
+            "description": "Missouri Territory"
+          },
+          {
+            "name": "300",
+            "description": "Montana"
+          },
+          {
+            "name": "305",
+            "description": "Montana Territory"
+          },
+          {
+            "name": "310",
+            "description": "Nebraska"
+          },
+          {
+            "name": "315",
+            "description": "Nebraska Territory"
+          },
+          {
+            "name": "320",
+            "description": "Nevada"
+          },
+          {
+            "name": "325",
+            "description": "Nevada Territory"
+          },
+          {
+            "name": "330",
+            "description": "New Hampshire"
+          },
+          {
+            "name": "340",
+            "description": "New Jersey"
+          },
+          {
+            "name": "350",
+            "description": "New Mexico"
+          },
+          {
+            "name": "355",
+            "description": "New Mexico Territory"
+          },
+          {
+            "name": "360",
+            "description": "New York"
+          },
+          {
+            "name": "370",
+            "description": "North Carolina"
+          },
+          {
+            "name": "380",
+            "description": "North Dakota"
+          },
+          {
+            "name": "385",
+            "description": "Northwest Territory"
+          },
+          {
+            "name": "390",
+            "description": "Ohio"
+          },
+          {
+            "name": "400",
+            "description": "Oklahoma"
+          },
+          {
+            "name": "405",
+            "description": "Oklahoma Territory"
+          },
+          {
+            "name": "410",
+            "description": "Oregon"
+          },
+          {
+            "name": "413",
+            "description": "Oregon Territory"
+          },
+          {
+            "name": "417",
+            "description": "Orleans Territory"
+          },
+          {
+            "name": "420",
+            "description": "Pennsylvania"
+          },
+          {
+            "name": "440",
+            "description": "Rhode Island"
+          },
+          {
+            "name": "450",
+            "description": "South Carolina"
+          },
+          {
+            "name": "460",
+            "description": "South Dakota"
+          },
+          {
+            "name": "465",
+            "description": "Southwest Territory"
+          },
+          {
+            "name": "470",
+            "description": "Tennessee"
+          },
+          {
+            "name": "480",
+            "description": "Texas"
+          },
+          {
+            "name": "490",
+            "description": "Utah"
+          },
+          {
+            "name": "495",
+            "description": "Utah Territory"
+          },
+          {
+            "name": "500",
+            "description": "Vermont"
+          },
+          {
+            "name": "510",
+            "description": "Virginia"
+          },
+          {
+            "name": "530",
+            "description": "Washington"
+          },
+          {
+            "name": "535",
+            "description": "Washington Territory"
+          },
+          {
+            "name": "540",
+            "description": "West Virginia"
+          },
+          {
+            "name": "550",
+            "description": "Wisconsin"
+          },
+          {
+            "name": "555",
+            "description": "Wisconsin Territory"
+          },
+          {
+            "name": "560",
+            "description": "Wyoming"
+          },
+          {
+            "name": "565",
+            "description": "Wyoming Territory"
+          },
+          {
+            "name": "720",
+            "description": "Puerto Rico"
+          },
+          {
+            "name": "999",
+            "description": "Persons in the Military"
+          }
+        ]
+      }
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        geographicIntegration:
+          type: string
+        sequence:
+          type: float
+        timeSeries:
+          type: array
+          items:
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              sequence:
+                type: integer
+        geogLevels:
+          type: array
+          items:
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              hasGeogExtentSelection:
+                type: boolean
+              sequence:
+                type: integer
+        geographicInstances:
+          type: array
+          items:
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+    TimeSeriesTableSimple:
+      example: {
+        "name": "A00",
+        "description": "Total Population",
+        "geographicIntegration": "Nominal",
+        "sequence": 0.01,
+        "years": [
+            "1790",
+            "1800",
+            "1810",
+            "1820",
+            "1830",
+            "1840",
+            "1850",
+            "1860",
+            "1870",
+            "1880",
+            "1890",
+            "1900",
+            "1910",
+            "1920",
+            "1930",
+            "1940",
+            "1950",
+            "1960",
+            "1970",
+            "1980",
+            "1990",
+            "2000",
+            "2010"
+        ],
+        "geogLevels": [
+          {
+            "name": "state",
+            "description": "State",
+            "hasGeogExtentSelection": true,
+            "sequence": 4
+          },
+          {
+            "name": "county",
+            "description": "State--County",
+            "hasGeogExtentSelection": true,
+            "sequence": 25
+          }
+        ]
+      }
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        geographicIntegration:
+          type: string
+        sequence:
+          type: float
+        timeSeries:
+          type: array
+          items:
+            type: string
+        geogLevels:
+          type: array
+          items:
+            type: string
+    DataTableFull:
+      example: {
+        "name": "NT1",
+        "description": "Total Population",
+        "universe": "Persons",
+        "nhgisCode": "AAA",
+        "sequence": 1,
+        "datasetName": "1790_cPop",
+        "variables": [ {"description": "Total", "nhgisCode": "AAA001" } ]
+        }
+      properties:
+        name:
+          type: string
+        nhgisCode:
+          type: string
+        description:
+          type: string
+        universe:
+          type: string
+        sequence:
+          type: integer
+        datasetName:
+          type: string
+        variables:
+          type: array
+          items:
+            properties:
+              name:
+                type: string
+              nhgisCode:
+                type: string
+    DataTableSimple:
+      example: {
+        "name": "NT1",
+        "nhgisCode": "AAA",
+        "description": "Total Population",
+        "sequence": 1
+        }
+      properties:
+        name:
+          type: string
+        nhgisCode:
+          type: string
+        description:
+          type: string
+        sequence:
+          type: integer
+    DatasetFull:
+      example: {
+      "name": "2010_SF1a",
+      "group": "2010 Census",
+      "description": "SF 1a - P & H Tables [Blocks & Larger Areas]",
+      "sequence": 4802,
+      "hasMultipleDataTypes": false,
+      "dataTables": [
+        {
+            "name": "P1",
+            "nhgisCode": "H7V",
+            "description": "Total Population",
+            "sequence": 1
+        }
+       ],
+       "geogLevels": [
+        {
+            "name": "nation",
+            "description": "Nation",
+            "hasGeogExtentSelection": false,
+            "sequence": 1
+        }
+       ],
+       "geographicInstances": [
+        {
+            "name": "010",
+            "description": "Alabama"
+        }
+       ],
+       "breakdowns": [
+        {
+            "name": "bs32",
+            "type": "Spatial",
+            "description": "Geographic Subarea (2010 Census and American Community Survey)",
+            "breakdownValues": [
+                {
+                    "name": "bs32.ge00",
+                    "description": "Total area"
+                }
+             ]
+        }
+        ]
+      }
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        group:
+          type: string
+        sequence:
+          type: integer
+        dataTables:
+          type: array
+          items:
+            $ref: "#/components/schemas/DataTableSimple"
+        geogLevels:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              description:
+                type: string
+              hasGeogExtentSelection:
+                type: boolean
+        hasMultipleDataTypes:
+          type: boolean
+        breakdowns:
+          type: object
+          properties:
+            name:
+              type: string
+            type:
+              type: string
+            description:
+              type: string
+            breakdownValues:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+            years:
+              type: array
+              items:
+                type: string
+            geographicInstances:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+    DatasetSimple:
+      example: {
+        "name": "1790_cPop",
+        "description": "1790 Census: Population Data [US, States & Counties",
+        "group": "1790 Census",
+        "sequence": 101
+        }
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        group:
+          type: string
+        sequence:
+          type: integer
+    Datasets:
+      type: array
+      items:
+        $ref: "#/components/schemas/DatasetSimple"
+    Shapefile:
+      example:  {
+        "name": "base.tl2000.nongen.us_state_1790",
+        "year": "1790",
+        "geographicLevel": "state",
+        "extent": "united states",
+        "basis": "2000 tiger/line +",
+        "sequence": 1
+      }
+      properties:
+        name:
+          type: string
+        year:
+          type: string
+        geographicLevel:
+          type: string
+        extent:
+          type: string
+        basis:
+          type: integer
+        sequence:
+          type: integer
+    DataExtract:
+      example: {
+        "extractDefinition": {
+          "datasets": {
+            "1790_cPop": {"dataTables":[ "NT1" ], "geogLevels":[ "place_00498" ] },
+            "1800_cPop": {"dataTables":[ "NT3" ], "geogLevels":[ "state" ] }
+          },
+          "timeSeriesTables": {
+            "A00": { "geogLevels": ["state"] }
+          },
+          "timeSeriesTableLayout": "time_by_row_layout",
+          "dataFormat": "csv_no_header",
+          "description": "abc",
+          "version": 2,
+          "collection": "nhgis"
+        },
+        "number": 2,
+        "status": "complete",
+        "downloadLinks": {
+          "codebookPreview": "https://api.ipums.org/downloads/nhgis/api/v1/extracts/1234567/nhgis0007_csv_PREVIEW.zip",
+          "tableData": "https://api.ipums.org/downloads/nhgis/api/v1/extracts/1234567/nhgis0007_csv.zip",
+          "gisData": "https://api.ipums.org/downloads/nhgis/api/v1/extracts/1234567/nhgis0007_shape.zip"
+        }
+      }
+      properties:
+        extractDefinition:
+          type: object
+          properties:
+            datasets:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/Dataset"
+            timeSeriesTables:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/TimeSeriesTable"
+            dataFormat:
+              type: string
+              enum: [ csv_no_header, csv_header, fixed_width ]
+            timeSeriesTableLayout:
+              type: string
+              enum: [ time_by_column_layout, time_by_row_layout, time_by_file_layout ]
+            breakdownAndDataTypeLayout:
+              type: string
+              enum: [ separate_files, single_file ]
+            shapefiles:
+              type: array
+              items:
+                type: string
+            geographicExtents:
+              type: array
+              items:
+                type: string
+            description:
+              type: string
+            version:
+              type: integer
+              format: int32
+            collection:
+              type: string
+        number:
+          type: integer
+          format: int64
+        status:
+          type: string
+        downloadLinks:
+          type: object
+          properties:
+            codebookPreview:
+              type: string
+            tableData:
+              type: string
+            gisData:
+              type: string
+    DataExtractPost:
+      example: {
+        "datasets": {
+          "1790_cPop": {
+            "dataTables": [
+              "NT1"
+            ],
+            "geogLevels": [
+              "state"
+            ]
+          }
+        },
+        "timeSeriesTables": {
+          "A00": {
+            "geogLevels": [
+              "state"
+            ],
+            "years": [
+              "1990"
+            ]
+          }
+        },
+        "timeSeriesTableLayout": "time_by_row_layout",
+        "dataFormat": "csv_no_header",
+        "description": "abc"
+      }
+      properties:
+        datasets:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Dataset"
+        timeSeriesTables:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/TimeSeriesTable"
+        dataFormat:
+          type: string
+          enum: [csv_no_header, csv_header, fixed_width]
+        timeSeriesTableLayout:
+          type: string
+          enum: [time_by_column_layout, time_by_row_layout, time_by_file_layout]
+        breakdownAndDataTypeLayout:
+          type: string
+          enum: [separate_files, single_file]
+        shapefiles:
+          type: array
+          items:
+            type: string
+        geographicExtents:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+    DataExtractPostResponse:
+      "$ref": "#/components/schemas/DataExtract"
+    DataExtracts:
+      type: array
+      items:
+        $ref: "#/components/schemas/DataExtract"
+    Dataset:
+      type: object
+      required:
+        - geogLevels
+        - dataTables
+      properties:
+        dataTables:
+          type: array
+          items:
+            type: string
+        geogLevels:
+          type: array
+          items:
+            type: string
+        breakdownValues:
+          type: array
+          items:
+            type: string
+        years:
+          type: array
+          items:
+            type: string
+    TimeSeriesTable:
+      type: object
+      required:
+        - geogLevels
+      properties:
+        geogLevels:
+          type: array
+          items:
+            type: string
+        years:
+          type: array
+          items:
+            type: string
+    Error:
+      required:
+        - type
+        - status
+        - detail
+      properties:
+        type:
+          type: integer
+          format: int32
+        status:
+          type: string
+        detail:
+          type: string
+  securitySchemes:
+    APIKeyHeader:
+      type: apiKey
+      in: header
+      name: Authorization
+
+

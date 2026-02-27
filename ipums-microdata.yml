@@ -1,0 +1,501 @@
+openapi: "3.0.0"
+info:
+  version: "v2"
+  title: API for IPUMS Microdata Collections
+servers:
+  - url: https://api.ipums.org
+security:
+  - APIKeyHeader: []
+paths:
+  /extracts/{extractNumber}:
+    get:
+      summary: Get a specific data extract.
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+        - in: path
+          name: extractNumber
+          schema:
+            type: integer
+          required: true
+          description: Number of extract to get.
+      responses:
+        '200':
+          description: A data extract.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExtractResponse"
+              example:
+                number: 2
+                status: "completed"
+                email: MY_IPUMS_ACCOUNT@EMAIL.ADDRESS
+                extractDefinition:
+                  version: 2
+                  dataFormat: "csv"
+                  caseSelectWho: "individuals"
+                  description: "my extract"
+                  dataStructure:
+                    rectangular:
+                      on: 'P'
+                  variables:
+                    YEAR: {
+                      preselected: true
+                    }
+                    SAMPLE: {
+                      preselected: true
+                    }
+                    AGE: {
+                      attachedCharacteristics: [ mother, father, spouse, head, mother2, father2 ]
+                    }
+                    SEX: {
+                      "dataQualityFlags": true
+                    }
+                    MARST: {
+                      caseSelections: {
+                        general: [ "1", "2", "3", "5" ]
+                      }
+                    }
+                    INCWAGE: {
+                      adjustMonetaryValues: true
+                    }
+                  samples:
+                    us2022a: { }
+                  "downloadLinks": {
+                    "rCommandFile": {
+                      "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.R",
+                      "bytes": 406,
+                      "sha256": "91ee7b337bebd2ae84996da2adf9fb7e2de7ec43779522146051be40f556cffb"
+                    },
+                    "basicCodebook": {
+                      "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.cbk",
+                      "bytes": 2738,
+                      "sha256": "f48b5998fd5ebc8a5912e39e1615a5f97b7697597ebb1a75be002f8b62d8690b"
+                    },
+                    "data": {
+                      "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.dat.gz",
+                      "bytes": 2360524,
+                      "sha256": "1ab5cbe0edf6a9305e2d781bf5badd281f2ae0a2c25f21a8348cb8a8aa9916e6"
+                    },
+                    "stataCommandFile": {
+                      "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.do",
+                      "bytes": 2798,
+                      "sha256": "91ecdf6361714f43493d4c87da30157310d34db8d43c4b054ffb78617ad5d83d"
+                    },
+                    "sasCommandFile": {
+                      "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.sas",
+                      "bytes": 2022,
+                      "sha256": "7cc23ebe76b2deca39f9c77cb5f106eb97fab488e9854437f509cb6e98e54736"
+                    },
+                    "spssCommandFile": {
+                      "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.sps",
+                      "bytes": 1614,
+                      "sha256": "8e1b64fc1e880befeb63203bd466e9fe3e704f35dfc9387c7288487a77c47725"
+                    },
+                    "ddiCodebook": {
+                      "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.xml",
+                      "bytes": 27092,
+                      "sha256": "982b4832b2b6cc47c3bae79c0853595237a3c7e4d69eee93a8508a8bf1074d2a"
+                    }
+                  }
+                  collection: "usa"  
+  /extracts:
+    get:
+      summary: Get a list of recent data extracts.
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+        - in: query
+          name: pageNumber
+          schema:
+            type: integer
+          required: false
+          description: The page number.
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+          required: false
+          description: The number of records to return per page.
+      responses:
+        '200':
+          description: A data extract.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExtracts"
+              example:
+                  - number: 2
+                    status: "completed"
+                    email: MY_IPUMS_ACCOUNT@EMAIL.ADDRESS
+                    extractDefinition:
+                      version: 2
+                      dataFormat: "csv"
+                      caseSelectWho: "individuals"
+                      description: "my extract"
+                      dataStructure:
+                        rectangular:
+                          on: 'P'
+                      variables:
+                        YEAR: {
+                          preselected: true
+                        }
+                        SAMPLE: {
+                          preselected: true
+                        }
+                        AGE: {
+                          attachedCharacteristics: [ mother, father, spouse, head, mother2, father2 ]
+                        }
+                        SEX: {
+                          "dataQualityFlags": true
+                        }
+                        MARST: {
+                          caseSelections: {
+                            general: [ "1", "2", "3", "5" ]
+                          }
+                        }
+                        INCWAGE: {
+                          adjustMonetaryValues: true
+                        }
+                      samples:
+                        us2022a: { }
+                    "downloadLinks": {
+                      "rCommandFile": {
+                        "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.R",
+                        "bytes": 406,
+                        "sha256": "91ee7b337bebd2ae84996da2adf9fb7e2de7ec43779522146051be40f556cffb"
+                      },
+                      "basicCodebook": {
+                        "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.cbk",
+                        "bytes": 2738,
+                        "sha256": "f48b5998fd5ebc8a5912e39e1615a5f97b7697597ebb1a75be002f8b62d8690b"
+                      },
+                      "data": {
+                        "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.dat.gz",
+                        "bytes": 2360524,
+                        "sha256": "1ab5cbe0edf6a9305e2d781bf5badd281f2ae0a2c25f21a8348cb8a8aa9916e6"
+                      },
+                      "stataCommandFile": {
+                        "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.do",
+                        "bytes": 2798,
+                        "sha256": "91ecdf6361714f43493d4c87da30157310d34db8d43c4b054ffb78617ad5d83d"
+                      },
+                      "sasCommandFile": {
+                        "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.sas",
+                        "bytes": 2022,
+                        "sha256": "7cc23ebe76b2deca39f9c77cb5f106eb97fab488e9854437f509cb6e98e54736"
+                      },
+                      "spssCommandFile": {
+                        "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.sps",
+                        "bytes": 1614,
+                        "sha256": "8e1b64fc1e880befeb63203bd466e9fe3e704f35dfc9387c7288487a77c47725"
+                      },
+                      "ddiCodebook": {
+                        "url": "https://demo.api.ipums.org/downloads/usa/api/v1/extracts/590145/usa_00002.xml",
+                        "bytes": 27092,
+                        "sha256": "982b4832b2b6cc47c3bae79c0853595237a3c7e4d69eee93a8508a8bf1074d2a"
+                      }
+                    }
+                    collection: "usa"
+    post:
+      summary: Create a data extract
+      parameters:
+        - in: query
+          name: collection
+          schema:
+            type: string
+          required: true
+          description: The data collection. This parameter was previously called "product". Using "product" as an alias for "collection" is still valid but may be deprecated in a future version of the API.
+        - in: query
+          name: version
+          schema:
+            type: string
+          required: true
+          description: The api version.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DataExtract"
+            example:
+              variables:
+                YEAR: { }
+                AGE: {
+                  attachedCharacteristics: [ mother, father, spouse, head ]
+                }
+                SEX: {
+                  "dataQualityFlags": true
+                }
+                MARST: {
+                  caseSelections: {
+                    general: [ "1", "2", "3", "5" ]
+                  }
+                }
+                INCWAGE: {
+                  adjustMonetaryValues: true
+                }
+              samples:
+                us2022a: { }
+              dataFormat: "csv"
+              description: "my extract"
+              dataStructure:
+                rectangular:
+                  on: 'P'  
+      responses:
+        '200':
+          description: Submitted data extract
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DataExtractResponse"
+              example:
+                number: 2
+                status: "queued"
+                email: MY_IPUMS_ACCOUNT@EMAIL.ADDRESS
+                downloadLinks: {}
+                extractDefinition:
+                  version: 2
+                  dataFormat: "csv"
+                  caseSelectWho: "individuals"
+                  description: "my extract"
+                  dataStructure:
+                    rectangular:
+                      on: 'P'
+                  variables:
+                    YEAR: {
+                      preselected: true
+                    }
+                    SAMPLE: {
+                      preselected: true
+                    }
+                    AGE: {
+                      attachedCharacteristics: [ mother, father, spouse, head, mother2, father2 ]
+                    }
+                    SEX: {
+                      "dataQualityFlags": true
+                    }
+                    MARST: {
+                      caseSelections: {
+                        general: [ "1", "2", "3", "5" ]
+                      }
+                    }
+                    INCWAGE: {
+                      adjustMonetaryValues: true
+                    }
+                  samples:
+                    us2022a: { }
+                  collection: "usa"  
+
+components:
+  schemas:
+    DataExtract:
+      required:
+        - samples
+        - dataFormat
+        - dataStructure
+        - description
+      properties:
+        dataFormat:
+          type: string
+          enum: [fixed_width, stata, spss, sas9, csv]
+        dataStructure:
+          $ref: "#/components/schemas/DataStructure"
+        description:
+          type: string
+        caseSelectWho:
+          type: string
+          enum: [ individuals, households ]
+        dataQualityFlags:
+          type: "boolean"
+        sampleMembers:
+          type: object
+          properties:
+            includeNonRespondents:
+              type: boolean
+            includeHouseholdMembers:
+              type: boolean
+        samples:
+          type: object
+          additionalProperties:
+            type: object
+        variables:
+          type: object
+          additionalProperties:
+            "$ref": "#/components/schemas/Variable"
+        timeUseVariables:
+          type: object
+          additionalProperties:
+            "$ref": "#/components/schemas/TimeUseVariable"
+
+    DataExtractResponse:
+      properties:
+        extractDefinition:
+          type: object
+          properties:
+            version:
+              type: integer
+              format: int32
+            collection:
+              type: string
+            dataFormat:
+              type: string
+              enum: [ fixed_width, stata, spss, sas9, csv ]
+            dataStructure:
+              $ref: "#/components/schemas/DataStructure"
+            description:
+              type: string
+            caseSelectWho:
+              type: string
+              enum: [ individuals, households ]
+            dataQualityFlags:
+              type: "boolean"
+            samples:
+              type: object
+              additionalProperties:
+                type: object
+            variables:
+              type: object
+              additionalProperties:
+                "$ref": "#/components/schemas/Variable"
+            timeUseVariables:
+              type: object
+              additionalProperties:
+                "$ref": "#/components/schemas/TimeUseVariable"
+        number:
+          type: integer
+          format: int64
+        status:
+          type: string
+        downloadLinks:
+          type: object
+          properties:
+            ddiCodebook:
+              $ref: "#/components/schemas/DownloadLink"
+            basicCodebook:
+              $ref: "#/components/schemas/DownloadLink"
+            spssCommandFile:
+              $ref: "#/components/schemas/DownloadLink"
+            sasCommandFile:
+              $ref: "#/components/schemas/DownloadLink"
+            stataCommandFile:
+              $ref: "#/components/schemas/DownloadLink"
+            rCommandFile:
+              $ref: "#/components/schemas/DownloadLink"
+    DataExtracts:
+      type: array
+      items:
+        $ref: "#/components/schemas/DataExtractResponse"
+    DataStructure:
+      type: "object"
+      "minProperties": 1
+      "maxProperties": 1
+      "additionalProperties": false
+      "properties": {
+        "rectangular": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "on": { "type": "string" }
+          }
+        },
+        "hierarchical": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        },
+        "householdOnly": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {}
+        }
+      }
+    Variable:
+      type: "object"
+      properties:
+        preselected:
+          type: "boolean"
+        dataQualityFlags:
+          type: "boolean"
+        caseSelections:
+          oneOf:
+            -   $ref: '#/components/schemas/CaseSelectionDetailed'
+            -   $ref: '#/components/schemas/CaseSelectionGeneral'
+        attachedCharacteristics:
+            $ref: '#/components/schemas/AttachedCharacteristics'
+    TimeUseVariable:
+      type: "object"
+      properties:
+        owner:
+          type: "string"
+    CaseSelectionDetailed:
+      type: "object"
+      properties:
+        detailed:
+          type: "array"
+          items:
+            type: "string"
+
+    CaseSelectionGeneral:
+      type: "object"
+      properties:
+        general:
+          type: "array"
+          items:
+            type: "string"
+    AttachedCharacteristics:
+      type: "array"
+      items:
+        type: string
+        enum:
+          - mother
+          - father
+          - spouse
+          - head
+    AdjustMonetaryValues:
+      type: "boolean"       
+    DownloadLink:
+      type: "object"
+      properties:
+        url:
+          type: string
+        bytes:
+          type: integer
+        sha256:
+          type: string
+    Error:
+      required:
+        - type
+        - status
+        - detail
+      properties:
+        type:
+          type: string
+        status:
+          type: object
+        detail:
+          type: string
+  securitySchemes:
+    APIKeyHeader:
+      type: apiKey
+      in: header
+      name: Authorization
