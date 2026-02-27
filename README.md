@@ -1,24 +1,26 @@
-# ipums-mcp
+# 📊 ipums-mcp
 
-A Model Context Protocol (MCP) server that exposes the [IPUMS API](https://developer.ipums.org) as tools for LLM clients. Supports IPUMS microdata collections (USA, CPS, IPUMSI, etc.) and NHGIS aggregate/GIS data.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Prerequisites
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that exposes the [IPUMS API](https://developer.ipums.org) as tools for LLM clients. Supports IPUMS microdata collections (USA, CPS, IPUMSI, etc.) and NHGIS aggregate/GIS data.
+
+## 📋 Prerequisites
 
 - Node.js 18+
 - An [IPUMS API key](https://account.ipums.org/api_keys)
 
-## Setup
+## 🛠️ Setup
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/hesscl/ipums-mcp
 cd ipums-mcp
 npm install
 npm run build
 ```
 
-**Never commit your API key.** Store it only in environment variables or your MCP client config (see below). The file `ipums_api_key.txt` is in `.gitignore` for a reason.
+> ⚠️ **Never commit your API key.** Store it only in environment variables or your MCP client config (see below).
 
-## Claude Desktop Configuration
+## 🖥️ Claude Desktop Configuration
 
 Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
@@ -38,9 +40,9 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 Restart Claude Desktop after editing.
 
-## Tools
+## 🔧 Tools
 
-### Microdata (USA, CPS, IPUMSI, ACS, NHIS, MEPS, …)
+### 🧬 Microdata (USA, CPS, IPUMSI, ACS, NHIS, MEPS, …)
 
 | Tool | Description |
 |------|-------------|
@@ -82,9 +84,9 @@ The server converts these to the keyed-object format the IPUMS API v2 requires.
 
 Available `fileTypes`: `data`, `ddiCodebook`, `basicCodebook`, `rCommandFile`, `spssCommandFile`, `stataCommandFile`, `sasCommandFile`.
 
-Returns `{ downloaded: [...], errors: [...] }`. Each downloaded entry includes `localPath`, `bytes`, and `sha256Verified`.
+Returns `{ downloaded: [...], errors: [...] }`. Each entry includes `localPath`, `bytes`, and `sha256Verified`.
 
-### NHGIS (Aggregate & GIS Data)
+### 🗺️ NHGIS (Aggregate & GIS Data)
 
 | Tool | Description |
 |------|-------------|
@@ -99,13 +101,13 @@ Returns `{ downloaded: [...], errors: [...] }`. Each downloaded entry includes `
 | `nhgis_get_extract` | Get NHGIS extract status and download links |
 | `nhgis_create_extract` | Submit a new NHGIS extract |
 
-## Workflow: Jupyter MCP + ipumsr
+## 🚀 Workflow: Jupyter MCP + ipumsr
 
 This server pairs naturally with a [Jupyter MCP server](https://github.com/dsp-shp/jupyter-mcp-server) to form a complete data pipeline — from browsing IPUMS metadata to live analysis in a notebook — without leaving your LLM client.
 
 ### Full pipeline example
 
-**Step 1 — Browse and submit (via MCP tools in Claude)**
+**Step 1 — Browse and submit (via MCP tools in Claude) 🤖**
 
 ```
 1. nhgis_list_datasets          → find the dataset you want
@@ -122,7 +124,7 @@ Or for microdata:
 3. microdata_download_extract   → download data + DDI codebook
 ```
 
-**Step 2 — Analyze in Jupyter with ipumsr (R kernel)**
+**Step 2 — Analyze in Jupyter with ipumsr (R kernel) 📓**
 
 Once `microdata_download_extract` has saved files locally, use the Jupyter MCP server to run R in a notebook:
 
@@ -138,7 +140,7 @@ head(data)
 attr(data$VETSTAT, "labels")
 ```
 
-For Python notebooks:
+For Python notebooks 🐍:
 
 ```python
 import pandas as pd
@@ -176,16 +178,16 @@ tbl <- read_nhgis("/data/ipums/nhgis0007_csv.zip", data_layer = 1)
 }
 ```
 
-With both servers running you can tell Claude: *"Submit a 2022 ACS extract for VETSTAT, AGE, SEX, STATEFIP, download it when ready, then open a Jupyter notebook and plot veteran counts by state with ggplot2."*
+With both servers running you can tell Claude: *"Submit a 2022 ACS extract for VETSTAT, AGE, SEX, STATEFIP, download it when ready, then open a Jupyter notebook and plot veteran counts by state with ggplot2."* 🎯
 
-## Security Notes
+## 🔒 Security Notes
 
 - **API key**: Pass via `IPUMS_API_KEY` env var only. Never hard-code it or commit it to source control.
 - **Download URL validation**: `microdata_download_extract` validates that each download URL uses HTTPS and resolves to an `*.ipums.org` host before sending your API key. URLs that fail this check are skipped and reported in `errors`.
 - **Output directory**: `microdata_download_extract` accepts any absolute path. Restrict access to the MCP server process if running in a shared environment.
 - **SHA-256 verification**: Every downloaded file is verified against the checksum provided by the API. A mismatch is reported in `errors` but the file is kept so you can inspect it.
 
-## Development
+## 💻 Development
 
 ```bash
 npm run dev       # run via tsx (no build step)
@@ -203,3 +205,7 @@ src/
     microdata.ts    microdata tools (list, get, create, download)
     nhgis.ts        NHGIS tools
 ```
+
+## 📄 License
+
+[MIT](LICENSE) — © 2026 hesscl
