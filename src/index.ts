@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { registerMicrodataTools } from "./tools/microdata.js";
 import { registerNhgisTools } from "./tools/nhgis.js";
+import { registerCodegenTools } from "./tools/codegen.js";
 
 const server = new McpServer({
   name: "ipums-mcp",
@@ -10,6 +11,7 @@ const server = new McpServer({
 
 registerMicrodataTools(server);
 registerNhgisTools(server);
+registerCodegenTools(server);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

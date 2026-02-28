@@ -38,11 +38,15 @@ export async function ipumsRequest(
 
   if (!response.ok) {
     let detail = "";
-    try {
-      const text = await response.text();
-      detail = `: ${text}`;
-    } catch {
-      // ignore parse errors
+    if (response.status < 500) {
+      // Include sanitized body for client errors (4xx) to surface useful messages
+      try {
+        const text = await response.text();
+        const sanitized = text.replace(/<[^>]*>/g, "").trim().slice(0, 200);
+        if (sanitized) detail = `: ${sanitized}`;
+      } catch {
+        // ignore parse errors
+      }
     }
     throw new Error(
       `IPUMS API request failed: ${response.status} ${response.statusText}${detail}`

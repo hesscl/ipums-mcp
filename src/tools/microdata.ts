@@ -92,7 +92,7 @@ export function registerMicrodataTools(server: McpServer): void {
   // Create a new microdata extract
   server.tool(
     "microdata_create_extract",
-    "Submit a new IPUMS microdata extract request. Specify the collection, samples, variables, and output format. Returns the new extract number and initial status.",
+    "Submit a new IPUMS microdata extract request. Specify the collection, samples, variables, and output format. Returns the new extract number and initial status. Once submitted, use microdata_extract_to_code to generate reproducible R or Python code for the extract.",
     {
       collection: MicrodataCollectionSchema.describe(
         "IPUMS microdata collection (e.g. 'usa', 'cps')"
@@ -282,6 +282,14 @@ export function registerMicrodataTools(server: McpServer): void {
         const filename = path.basename(parsedUrl.pathname);
         const localPath = path.join(outputDir, filename);
 
+        // Guard against path traversal: resolved path must stay within outputDir
+        const resolvedPath = path.resolve(localPath);
+        const resolvedDir = path.resolve(outputDir);
+        if (!resolvedPath.startsWith(resolvedDir + path.sep) && resolvedPath !== resolvedDir) {
+          errors.push({ fileType, error: "Download path would escape output directory" });
+          continue;
+        }
+
         try {
           const response = await fetch(link.url, {
             headers: { Authorization: apiKey },
@@ -316,8 +324,8 @@ export function registerMicrodataTools(server: McpServer): void {
               error: `SHA-256 mismatch: expected ${link.sha256}, got ${actualSha256}`,
             });
           }
-        } catch (err) {
-          errors.push({ fileType, error: String(err) });
+        } catch (err: unknown) {
+          errors.push({ fileType, error: err instanceof Error ? err.message : String(err) });
         }
       }
 

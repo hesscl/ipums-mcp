@@ -2,6 +2,5 @@ node_modules/
 dist/
 *.env
 .env*
-ipums_api_key.txt
 *.key
 *.secret

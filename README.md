@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that exposes the [IPUMS API](https://developer.ipums.org) as tools for LLM clients. Supports IPUMS microdata collections (USA, CPS, IPUMSI, etc.) and NHGIS aggregate/GIS data.
+A [Model Context Protocol](https://modelcontextprotocol.io) (MCP) server that exposes the [IPUMS API](https://developer.ipums.org) as tools for LLM clients. Supports IPUMS microdata collections (USA, CPS, IPUMSI, etc.) and NHGIS aggregate/GIS data. Includes tools for browsing metadata, submitting and downloading extracts, generating reproducible R/Python code, and producing formatted citations.
 
 ## 📋 Prerequisites
 
@@ -106,6 +106,7 @@ Any client that supports the [MCP stdio transport](https://modelcontextprotocol.
 | `microdata_create_extract` | Submit a new extract request |
 | `microdata_wait_for_extract` | Poll until extract completes, with automatic bail-out for large extracts |
 | `microdata_download_extract` | Download completed extract files to disk, with SHA-256 verification |
+| `microdata_extract_to_code` | Generate reproducible R (ipumsr) or Python (ipumspy) code for an extract |
 
 #### Variable search
 
@@ -206,6 +207,7 @@ Returns `{ downloaded: [...], errors: [...] }`. Each entry includes `localPath`,
 | `nhgis_list_extracts` | List recent NHGIS extracts |
 | `nhgis_get_extract` | Get NHGIS extract status and download links |
 | `nhgis_create_extract` | Submit a new NHGIS extract |
+| `nhgis_extract_to_code` | Generate reproducible R (ipumsr) or Python (ipumspy) code for an NHGIS extract |
 
 #### Table search
 
@@ -229,9 +231,80 @@ nhgis_get_dataset("2019_ACS5a")
 nhgis_search_data_tables("poverty", dataset="2019_ACS5a")
   → pick a table (e.g. "B17001")
 nhgis_create_extract(...)
+nhgis_extract_to_code(...)
+  → generate R/Python code to reproduce the extract
 ```
 
 > The NHGIS public API does not support server-side filtering. The search tools fetch full metadata pages and filter client-side.
+
+## 📝 Reproducibility & Citation
+
+Three tools close the loop between "I pulled this data via AI" and "here's the exact code to pull it again."
+
+| Tool | Description |
+|------|-------------|
+| `microdata_extract_to_code` | Generate R or Python code to reproduce a microdata extract |
+| `nhgis_extract_to_code` | Generate R or Python code to reproduce an NHGIS extract |
+| `generate_ipums_citation` | Return a formatted citation template with authors, DOI, and official citation link |
+
+### Code generation
+
+After submitting or retrieving an extract, call `microdata_extract_to_code` (or `nhgis_extract_to_code`) to get ready-to-run code:
+
+```
+microdata_extract_to_code({ collection: "usa", extractNumber: 42, language: "both" })
+```
+
+**R output (ipumsr):**
+
+```r
+library(ipumsr)
+
+extract <- define_extract_usa(
+  samples = c("us2022a"),
+  variables = c("VETSTAT", "AGE", "SEX", "STATEFIP"),
+  data_format = "csv",
+  data_structure = "rectangular"
+)
+
+extract <- submit_extract(extract)
+extract <- wait_for_extract(extract)
+path    <- download_extract(extract)
+
+ddi  <- read_ipums_ddi(path$ddi)
+data <- read_ipums_micro(ddi)
+```
+
+**Python output (ipumspy):**
+
+```python
+from ipumspy import IpumsApiClient, UsaExtract
+import os
+
+client = IpumsApiClient(api_key=os.environ["IPUMS_API_KEY"])
+
+extract = UsaExtract(
+    samples=["us2022a"],
+    variables=["VETSTAT", "AGE", "SEX", "STATEFIP"],
+    data_format="csv"
+)
+
+extract = client.submit_extract(extract)
+client.wait_for_extract(extract)
+client.download_extract(extract, download_dir="./downloads")
+```
+
+The `language` parameter accepts `"r"`, `"python"`, or `"both"` (default). For variables with case selections or data quality flags, R output uses `var_spec()` automatically. NHGIS output uses `ds_spec()`/`tst_spec()` for datasets and time series tables, with camelCase API keys converted to snake_case for both languages.
+
+### Citation
+
+`generate_ipums_citation` returns the standard citation for any IPUMS collection — no API call needed:
+
+```
+generate_ipums_citation({ collection: "nhgis" })
+```
+
+Returns the full author list, DOI, and a direct link to the official citation page where the current version number is always listed. Replace `[YEAR]` and `VX` with the current year and version before publishing.
 
 ## 🚀 Workflow: Jupyter MCP + ipumsr
 
@@ -247,6 +320,7 @@ This server pairs naturally with a [Jupyter MCP server](https://github.com/datal
 3. nhgis_get_dataset            → confirm tables and geo levels
 4. nhgis_create_extract         → submit the extract
 5. nhgis_get_extract            → poll until status = "completed"
+6. nhgis_extract_to_code        → generate R/Python code to reproduce the extract
 ```
 
 Or for microdata:
@@ -257,6 +331,7 @@ Or for microdata:
 3. microdata_create_extract       → submit (size advisory tells you whether to wait or check back)
 4. microdata_wait_for_extract     → poll up to 90s; bail out gracefully for large extracts
 5. microdata_download_extract     → download data + DDI codebook
+6. microdata_extract_to_code      → generate R/Python code to reproduce the extract
 ```
 
 > 💡 **Variable discovery:** Use `microdata_search_variables` to look up mnemonics from natural language — search `"income"`, `"veteran"`, `"race"` — rather than relying on memorized variable names. Filter by `sample` to confirm a variable is available in your target year. For NHGIS, use `nhgis_search_datasets` and `nhgis_search_data_tables` to find tables by keyword, then `nhgis_get_data_table` to see all variables within a table.
@@ -321,16 +396,26 @@ With both servers running you can prompt your LLM client: *"Submit a 2022 ACS ex
 
 ## 🔒 Security Notes
 
-- **API key**: Pass via `IPUMS_API_KEY` env var only. Never hard-code it or commit it to source control.
+- **API key**: Pass via `IPUMS_API_KEY` env var only. Never hard-code it or commit it to source control. For local development, store it in a `.env` file (gitignored).
 - **Download URL validation**: `microdata_download_extract` validates that each download URL uses HTTPS and resolves to an `*.ipums.org` host before sending your API key. URLs that fail this check are skipped and reported in `errors`.
-- **Output directory**: `microdata_download_extract` accepts any absolute path. Restrict access to the MCP server process if running in a shared environment.
+- **Path traversal protection**: Downloaded filenames are resolved against `outputDir` and rejected if the resolved path would escape that directory.
 - **SHA-256 verification**: Every downloaded file is verified against the checksum provided by the API. A mismatch is reported in `errors` but the file is kept so you can inspect it.
+- **Error message sanitization**: API error responses from 4xx errors are HTML-stripped and truncated before being surfaced; 5xx server error bodies are suppressed entirely.
+- **Generated code safety**: R code emitted by `microdata_extract_to_code` and `nhgis_extract_to_code` escapes all string values to prevent code injection from API-returned identifiers.
 
 ## 💻 Development
 
+Create a `.env` file in the project root (already gitignored):
+
 ```bash
-npm run dev       # run via tsx (no build step)
-npm run build     # compile TypeScript → dist/
+IPUMS_API_KEY=your-key-here
+```
+
+Then run:
+
+```bash
+export $(cat .env | xargs) && npm run dev   # load key + run via tsx
+npm run build                                # compile TypeScript → dist/
 ```
 
 Source layout:
@@ -345,6 +430,7 @@ src/
   tools/
     microdata.ts    microdata tools (search vars, list, get, create, wait, download)
     nhgis.ts        NHGIS tools (search datasets/tables/TSTs + list/get/create/extract)
+    codegen.ts      reproducibility tools (extract→code for R/Python, citation lookup)
 ```
 
 ## 📄 License

@@ -225,7 +225,7 @@ export function registerNhgisTools(server: McpServer): void {
   // Create a new NHGIS extract
   server.tool(
     "nhgis_create_extract",
-    "Submit a new NHGIS extract request. Specify datasets (with data tables and geographic levels), time series tables, shapefiles, and output format. Returns the new extract number and initial status.",
+    "Submit a new NHGIS extract request. Specify datasets (with data tables and geographic levels), time series tables, shapefiles, and output format. Returns the new extract number and initial status. Once submitted, use nhgis_extract_to_code to generate reproducible R or Python code for the extract.",
     {
       description: NhgisExtractSchema.shape.description,
       dataFormat: NhgisExtractSchema.shape.dataFormat,
@@ -268,7 +268,7 @@ export function registerNhgisTools(server: McpServer): void {
     "nhgis_search_datasets",
     "Search NHGIS datasets by keyword. Fetches all available datasets and returns those whose name, group (e.g. '2020 Census'), or description match the keyword. Use this to find which datasets cover a topic or census year before drilling into specific data tables.",
     {
-      keyword: z.string().describe("Search term to match against dataset name, group, and description (case-insensitive)"),
+      keyword: z.string().max(200).describe("Search term to match against dataset name, group, and description (case-insensitive)"),
     },
     async ({ keyword }) => {
       const all = await fetchAllPages("/metadata/nhgis/datasets") as Record<string, unknown>[];
@@ -294,7 +294,7 @@ export function registerNhgisTools(server: McpServer): void {
     "nhgis_search_data_tables",
     "Search NHGIS data tables by keyword. If a dataset is specified, searches all tables within that dataset (comprehensive). Without a dataset, scans up to 2,500 tables across all datasets — recommend using nhgis_search_datasets first to find a relevant dataset, then scoping the search here. Matches against table description and universe.",
     {
-      keyword: z.string().describe("Search term to match against table description and universe (case-insensitive)"),
+      keyword: z.string().max(200).describe("Search term to match against table description and universe (case-insensitive)"),
       dataset: PathParamSchema
         .optional()
         .describe("Optional dataset identifier to scope the search (e.g. '2019_ACS5a'). Strongly recommended for comprehensive results."),
@@ -339,7 +339,7 @@ export function registerNhgisTools(server: McpServer): void {
     "nhgis_search_time_series_tables",
     "Search NHGIS time series tables by keyword. Fetches all ~400 time series tables (which span multiple census years with consistent geographic definitions) and returns those matching the keyword in their name or description.",
     {
-      keyword: z.string().describe("Search term to match against time series table name and description (case-insensitive)"),
+      keyword: z.string().max(200).describe("Search term to match against time series table name and description (case-insensitive)"),
     },
     async ({ keyword }) => {
       const all = (await fetchAllPages("/metadata/nhgis/time_series_tables")) as Record<string, unknown>[];
